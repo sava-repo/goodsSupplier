@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import db
 
 
@@ -92,3 +93,56 @@ class Supplier(db.Model):
                 {'id': c.id, 'name': c.name} for c in self.categories
             ]
         return data
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class SupplierNote(db.Model):
+    __tablename__ = 'supplier_notes'
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'supplier_id', name='uq_user_supplier'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
+    note = db.Column(db.Text, nullable=True)
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    user = db.relationship('User', backref=db.backref('supplier_notes', lazy='select'))
+    supplier = db.relationship('Supplier', backref=db.backref('user_notes', lazy='select'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'supplier_id': self.supplier_id,
+            'note': self.note,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

@@ -1,0 +1,124 @@
+.wrapper {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px 10px;
+  background: var(--bg-card, #f8f9fa);
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  vertical-align: middle;
+}
+
+.table tr:hover td {
+  background: var(--bg-hover, rgba(79, 70, 229, 0.04));
+}
+
+.nameCol { min-width: 180px; }
+.cityCol { min-width: 100px; }
+.catCol { min-width: 140px; }
+.minCol { min-width: 100px; white-space: nowrap; }
+.certCol { min-width: 80px; text-align: center; }
+.noteCol { min-width: 200px; }
+
+.link {
+  color: var(--primary, #4f46e5);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--primary-light, rgba(79, 70, 229, 0.1));
+  color: var(--primary, #4f46e5);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.certYes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.certNo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.noteWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.noteInput {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg, #fff);
+  color: var(--text, #222);
+}
+
+.noteInput:focus {
+  outline: none;
+  border-color: var(--primary, #4f46e5);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+.saving {
+  font-size: 12px;
+}
+
+.notePlaceholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 13px;
+  cursor: default;
+}

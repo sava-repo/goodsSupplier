@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PackageSearch } from 'lucide-react'
-import SupplierCard from '../components/SupplierCard'
+import SupplierList from '../components/SupplierList'
 import FilterPanel from '../components/ui/FilterPanel'
 import EmptyState from '../components/ui/EmptyState'
 import Button from '../components/ui/Button'
@@ -98,11 +98,7 @@ export default function HomePage() {
           <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
             Найдено: {total}
           </p>
-          <div className={styles.list}>
-            {suppliers.map((s) => (
-              <SupplierCard key={s.id} supplier={s} />
-            ))}
-          </div>
+          <SupplierList suppliers={suppliers} />
           {pages > 1 && (
             <div className={styles.pagination}>
               <Button

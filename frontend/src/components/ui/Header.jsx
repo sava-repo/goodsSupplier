@@ -1,8 +1,16 @@
-import { Link, NavLink } from 'react-router-dom'
-import { GitCompare, Plus } from 'lucide-react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { GitCompare, Plus, LogIn, LogOut } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 import styles from './Header.module.css'
 
 export default function Header({ compareCount = 0 }) {
+  const { user, isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
   return (
     <header className={styles.header}>
       <div className={styles.left}>
@@ -43,6 +51,19 @@ export default function Header({ compareCount = 0 }) {
             <span className={styles.compareBadge}>{compareCount}</span>
           )}
         </NavLink>
+        {isAuthenticated ? (
+          <button className={styles.navLink} onClick={handleLogout} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <LogOut style={{ width: 16, height: 16 }} />
+            {user?.username}
+          </button>
+        ) : (
+          <NavLink to="/login" className={({ isActive }) =>
+            `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
+          }>
+            <LogIn style={{ width: 16, height: 16, marginRight: 4 }} />
+            Войти
+          </NavLink>
+        )}
       </div>
     </header>
   )

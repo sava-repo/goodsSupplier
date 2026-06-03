@@ -1,9 +1,18 @@
 const BASE_URL = '/api'
 
+function getToken() {
+  return localStorage.getItem('access_token')
+}
+
 async function request(method, path, body = null) {
   const options = {
     method,
     headers: { 'Content-Type': 'application/json' },
+  }
+
+  const token = getToken()
+  if (token) {
+    options.headers['Authorization'] = `Bearer ${token}`
   }
 
   if (body !== null) {

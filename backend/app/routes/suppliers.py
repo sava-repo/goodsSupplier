@@ -1,12 +1,14 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.database import db
-from app.models import Supplier, Category
+from app.models import Supplier, Category, SupplierNote
 from app.schemas import supplier_schema, suppliers_schema, supplier_create_schema, supplier_update_schema
 
 suppliers_bp = Blueprint('suppliers', __name__)
 
 
 @suppliers_bp.route('', methods=['GET'])
+@jwt_required(optional=True)
 def get_suppliers():
     """GET /api/suppliers — список активных поставщиков с пагинацией."""
     page = request.args.get('page', 1, type=int)
@@ -16,8 +18,22 @@ def get_suppliers():
     query = Supplier.query.filter_by(is_active=True).order_by(Supplier.name)
     paginated = query.paginate(page=page, per_page=per_page, error_out=False)
 
+    # Если пользователь авторизован — добавляем user_note
+    jwt_data = get_jwt()
+    user_id = int(get_jwt_identity()) if jwt_data else None
+
+    items = []
+    for s in paginated.items:
+        supplier_dict = s.to_dict()
+        if user_id:
+            note_obj = SupplierNote.query.filter_by(
+                user_id=user_id, supplier_id=s.id
+            ).first()
+            supplier_dict['user_note'] = note_obj.note if note_obj else None
+        items.append(supplier_dict)
+
     return jsonify({
-        'items': [s.to_dict() for s in paginated.items],
+        'items': items,
         'total': paginated.total,
         'page': paginated.page,
         'per_page': paginated.per_page,
