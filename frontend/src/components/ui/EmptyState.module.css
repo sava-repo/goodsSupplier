@@ -1,0 +1,27 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  text-align: center;
+  gap: var(--spacing-md);
+}
+
+.icon {
+  color: var(--text-muted);
+  width: 48px;
+  height: 48px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 400px;
+}

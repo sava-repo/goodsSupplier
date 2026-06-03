@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: goods_supplier
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    environment:
+      FLASK_APP: app
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/goods_supplier
+    depends_on:
+      - db
+    command: >
+      sh -c "if [ ! -d migrations ]; then flask db init && flask db migrate -m 'initial'; fi && flask db upgrade && python seed.py && flask run --host=0.0.0.0 --port=5000 --reload"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+
+volumes:
+  pgdata:

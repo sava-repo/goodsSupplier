@@ -1,0 +1,27 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+}
+
+.pageInfo {
+  font-size: 14px;
+  color: var(--text-secondary);
+}

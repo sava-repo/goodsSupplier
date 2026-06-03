@@ -1,0 +1,20 @@
+.panel {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.field {
+  flex: 1;
+  min-width: 200px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
