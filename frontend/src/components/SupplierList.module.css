@@ -38,6 +38,7 @@
 .minCol { min-width: 100px; white-space: nowrap; }
 .certCol { min-width: 80px; text-align: center; }
 .noteCol { min-width: 200px; }
+.compareCol { width: 60px; text-align: center; white-space: nowrap; }
 
 .link {
   color: var(--primary, #4f46e5);
@@ -121,4 +122,36 @@
   color: var(--text-muted, #94a3b8);
   font-size: 13px;
   cursor: default;
+}
+
+.compareBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--bg-border, #e2e8f0);
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.compareBtn:hover:not(:disabled) {
+  background: var(--bg-subtle, #f8f9fa);
+  color: var(--color-primary-text, #4f46e5);
+  border-color: var(--color-primary, #4f46e5);
+}
+
+.compareBtn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.compareBtnActive {
+  background: var(--color-info-soft, rgba(79, 70, 229, 0.1));
+  border-color: var(--color-info, #4f46e5);
+  color: var(--color-info, #4f46e5);
 }

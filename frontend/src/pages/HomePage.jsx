@@ -19,8 +19,8 @@ export default function HomePage() {
   // Фильтры
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [city, setCity] = useState('')
-  const [appliedCity, setAppliedCity] = useState('')
+  const [location, setLocation] = useState('')
+  const [appliedLocation, setAppliedLocation] = useState(null)
 
   // Загрузка категорий
   useEffect(() => {
@@ -31,15 +31,22 @@ export default function HomePage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const hasFilters = search || categoryId || appliedCity
+      const hasFilters = search || categoryId || appliedLocation
       if (hasFilters) {
-        const data = await suppliersApi.search({
+        const params = {
           q: search,
           category_id: categoryId || undefined,
-          city: appliedCity || undefined,
           page,
           per_page: 20,
-        })
+        }
+        if (appliedLocation?.type === 'city') {
+          params.city = appliedLocation.value
+        } else if (appliedLocation?.type === 'region') {
+          params.region = appliedLocation.value
+        } else if (appliedLocation?.value) {
+          params.location = appliedLocation.value
+        }
+        const data = await suppliersApi.search(params)
         setSuppliers(data.items)
         setTotal(data.total)
         setPages(data.pages)
@@ -54,7 +61,7 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
-  }, [search, categoryId, appliedCity, page])
+  }, [search, categoryId, appliedLocation, page])
 
   useEffect(() => {
     fetchData()
@@ -63,13 +70,13 @@ export default function HomePage() {
   // При изменении фильтров — сброс на 1 страницу
   const handleSearch = (v) => { setSearch(v); setPage(1) }
   const handleCategory = (v) => { setCategoryId(v); setPage(1) }
-  const handleCityChange = (v) => { setCity(v) }
-  const handleCityApply = (v) => { setAppliedCity(v); setPage(1) }
+  const handleLocationChange = (v) => { setLocation(v) }
+  const handleLocationApply = (v) => { setAppliedLocation(v); setPage(1) }
   const handleReset = () => {
     setSearch('')
     setCategoryId('')
-    setCity('')
-    setAppliedCity('')
+    setLocation('')
+    setAppliedLocation(null)
     setPage(1)
   }
 
@@ -81,9 +88,9 @@ export default function HomePage() {
         categoryId={categoryId}
         onCategoryChange={handleCategory}
         categories={categories}
-        city={city}
-        onCityChange={handleCityChange}
-        onCityApply={handleCityApply}
+        location={location}
+        onLocationChange={handleLocationChange}
+        onLocationApply={handleLocationApply}
         onReset={handleReset}
       />
 

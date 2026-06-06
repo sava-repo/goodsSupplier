@@ -59,6 +59,7 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.notes import notes_bp
     from app.routes.cities import cities_bp
+    from app.routes.locations import locations_bp
 
     app.register_blueprint(categories_bp, url_prefix='/api/categories')
     app.register_blueprint(suppliers_bp, url_prefix='/api/suppliers')
@@ -66,6 +67,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(notes_bp, url_prefix='/api/suppliers')
     app.register_blueprint(cities_bp, url_prefix='/api/suppliers')
+    app.register_blueprint(locations_bp, url_prefix='/api/suppliers')
 
     @app.route('/api/health')
     def health():

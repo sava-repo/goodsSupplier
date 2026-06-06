@@ -18,12 +18,21 @@ export const suppliersApi = {
   delete: (id) => api.del(`/suppliers/${id}`),
 
   /** Поиск с фильтрами */
-  search: ({ q, category_id, city, region, page = 1, per_page = 20 } = {}) => {
+  search: ({
+    q,
+    category_id,
+    city,
+    region,
+    location,
+    page = 1,
+    per_page = 20,
+  } = {}) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
     if (category_id) params.set('category_id', category_id)
     if (city) params.set('city', city)
     if (region) params.set('region', region)
+    if (location) params.set('location', location)
     params.set('page', page)
     params.set('per_page', per_page)
     return api.get(`/suppliers/search?${params.toString()}`)
@@ -35,4 +44,8 @@ export const suppliersApi = {
   /** Список уникальных городов (для автодополнения) */
   cities: (q) =>
     api.get(`/suppliers/cities?q=${encodeURIComponent(q || '')}`),
+
+  /** Список уникальных локаций: городов и регионов (для автодополнения) */
+  locations: (q) =>
+    api.get(`/suppliers/locations?q=${encodeURIComponent(q || '')}`),
 }

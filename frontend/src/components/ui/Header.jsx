@@ -19,15 +19,6 @@ export default function Header({ compareCount = 0 }) {
         </Link>
         <nav className={styles.nav}>
           <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
-            }
-          >
-            Каталог
-          </NavLink>
-          <NavLink
             to="/suppliers/new"
             className={({ isActive }) =>
               `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`

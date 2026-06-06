@@ -13,6 +13,7 @@ def search_suppliers():
     category_ids_str = request.args.get('category_id', '', type=str)
     city = request.args.get('city', '', type=str).strip()
     region = request.args.get('region', '', type=str).strip()
+    location = request.args.get('location', '', type=str).strip()
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     per_page = min(per_page, 100)
@@ -44,6 +45,17 @@ def search_suppliers():
     # Фильтрация по региону (частичное совпадение)
     if region:
         query = query.filter(Supplier.region.ilike(f'%{region}%'))
+
+    # Фильтрация по локации: OR-поиск по городу и региону.
+    # Используется при свободном вводе в поле «Город или регион»,
+    # когда пользователь не выбрал конкретный элемент из подсказок.
+    if location and not city and not region:
+        query = query.filter(
+            or_(
+                Supplier.city.ilike(f'%{location}%'),
+                Supplier.region.ilike(f'%{location}%'),
+            )
+        )
 
     query = query.order_by(Supplier.name)
     paginated = query.paginate(page=page, per_page=per_page, error_out=False)

@@ -1,5 +1,5 @@
 import { SearchInput, Select } from './Input'
-import CityAutocomplete from './CityAutocomplete'
+import LocationAutocomplete from './LocationAutocomplete'
 import Button from './Button'
 import styles from './FilterPanel.module.css'
 
@@ -9,9 +9,9 @@ export default function FilterPanel({
   categoryId = '',
   onCategoryChange,
   categories = [],
-  city = '',
-  onCityChange,
-  onCityApply,
+  location = '',
+  onLocationChange,
+  onLocationApply,
   onReset,
 }) {
   const categoryOptions = categories.map((c) => ({
@@ -38,12 +38,12 @@ export default function FilterPanel({
         />
       </div>
       <div className={styles.field}>
-        <CityAutocomplete
-          label="Город"
-          placeholder="Город..."
-          value={city}
-          onChange={onCityChange}
-          onApply={onCityApply}
+        <LocationAutocomplete
+          label="Город или регион"
+          placeholder="Город или регион..."
+          value={location}
+          onChange={onLocationChange}
+          onApply={onLocationApply}
         />
       </div>
       <div className={styles.actions}>
