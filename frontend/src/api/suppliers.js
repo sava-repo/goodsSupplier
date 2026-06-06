@@ -31,4 +31,8 @@ export const suppliersApi = {
 
   /** Сравнение поставщиков */
   compare: (ids) => api.get(`/suppliers/compare?ids=${ids.join(',')}`),
+
+  /** Список уникальных городов (для автодополнения) */
+  cities: (q) =>
+    api.get(`/suppliers/cities?q=${encodeURIComponent(q || '')}`),
 }

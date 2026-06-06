@@ -20,6 +20,7 @@ export default function HomePage() {
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [city, setCity] = useState('')
+  const [appliedCity, setAppliedCity] = useState('')
 
   // Загрузка категорий
   useEffect(() => {
@@ -30,12 +31,12 @@ export default function HomePage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const hasFilters = search || categoryId || city
+      const hasFilters = search || categoryId || appliedCity
       if (hasFilters) {
         const data = await suppliersApi.search({
           q: search,
           category_id: categoryId || undefined,
-          city: city || undefined,
+          city: appliedCity || undefined,
           page,
           per_page: 20,
         })
@@ -53,7 +54,7 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
-  }, [search, categoryId, city, page])
+  }, [search, categoryId, appliedCity, page])
 
   useEffect(() => {
     fetchData()
@@ -62,11 +63,13 @@ export default function HomePage() {
   // При изменении фильтров — сброс на 1 страницу
   const handleSearch = (v) => { setSearch(v); setPage(1) }
   const handleCategory = (v) => { setCategoryId(v); setPage(1) }
-  const handleCity = (v) => { setCity(v); setPage(1) }
+  const handleCityChange = (v) => { setCity(v) }
+  const handleCityApply = (v) => { setAppliedCity(v); setPage(1) }
   const handleReset = () => {
     setSearch('')
     setCategoryId('')
     setCity('')
+    setAppliedCity('')
     setPage(1)
   }
 
@@ -79,7 +82,8 @@ export default function HomePage() {
         onCategoryChange={handleCategory}
         categories={categories}
         city={city}
-        onCityChange={handleCity}
+        onCityChange={handleCityChange}
+        onCityApply={handleCityApply}
         onReset={handleReset}
       />
 

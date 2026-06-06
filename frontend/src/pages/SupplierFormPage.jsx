@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { Input, Select, Textarea } from '../components/ui/Input'
+import CityAutocomplete from '../components/ui/CityAutocomplete'
 import { useToast } from '../components/ui/Toast'
 import { suppliersApi } from '../api/suppliers'
 import { categoriesApi } from '../api/categories'
@@ -134,10 +135,10 @@ export default function SupplierFormPage() {
                 error={errors.name}
                 placeholder="ООО «Поставщик»"
               />
-              <Input
+              <CityAutocomplete
                 label="Город *"
                 value={form.city}
-                onChange={(e) => handleChange('city', e.target.value)}
+                onChange={(v) => handleChange('city', v)}
                 error={errors.city}
                 placeholder="Москва"
               />

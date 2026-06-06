@@ -1,4 +1,5 @@
 import { SearchInput, Select } from './Input'
+import CityAutocomplete from './CityAutocomplete'
 import Button from './Button'
 import styles from './FilterPanel.module.css'
 
@@ -10,6 +11,7 @@ export default function FilterPanel({
   categories = [],
   city = '',
   onCityChange,
+  onCityApply,
   onReset,
 }) {
   const categoryOptions = categories.map((c) => ({
@@ -36,15 +38,16 @@ export default function FilterPanel({
         />
       </div>
       <div className={styles.field}>
-        <SearchInput
+        <CityAutocomplete
           label="Город"
           placeholder="Город..."
           value={city}
-          onChange={(e) => onCityChange(e.target.value)}
+          onChange={onCityChange}
+          onApply={onCityApply}
         />
       </div>
       <div className={styles.actions}>
-        <Button variant="ghost" size="small" onClick={onReset}>
+        <Button variant="ghost" onClick={onReset}>
           Сбросить
         </Button>
       </div>
