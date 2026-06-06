@@ -19,11 +19,22 @@ async function request(method, path, body = null) {
     options.body = JSON.stringify(body)
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, options)
+  let response
+  try {
+    response = await fetch(`${BASE_URL}${path}`, options)
+  } catch (err) {
+    // Сетевая ошибка — бэкенд недоступен / CORS / нет соединения.
+    const e = new Error('Не удалось подключиться к серверу. Проверьте, что бэкенд запущен.')
+    e.kind = 'network'
+    throw e
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Ошибка сети' }))
-    throw new Error(error.error || JSON.stringify(error.errors) || 'Ошибка запроса')
+    const e = new Error(error.error || JSON.stringify(error.errors) || 'Ошибка запроса')
+    e.kind = 'http'
+    e.status = response.status
+    throw e
   }
 
   return response.json()

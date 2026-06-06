@@ -1,4 +1,5 @@
-import { SearchInput, Select } from './Input'
+import { SearchInput } from './Input'
+import CategorySelect from './CategorySelect'
 import LocationAutocomplete from './LocationAutocomplete'
 import Button from './Button'
 import styles from './FilterPanel.module.css'
@@ -29,11 +30,11 @@ export default function FilterPanel({
         />
       </div>
       <div className={styles.field}>
-        <Select
+        <CategorySelect
           label="Категория"
           options={categoryOptions}
           value={categoryId}
-          onChange={(e) => onCategoryChange(e.target.value)}
+          onChange={onCategoryChange}
           placeholder="Все категории"
         />
       </div>

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus, X, LogIn } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { Input, Select, Textarea } from '../components/ui/Input'
 import CityAutocomplete from '../components/ui/CityAutocomplete'
 import { useToast } from '../components/ui/Toast'
+import { useAuth } from '../context/AuthContext'
 import { suppliersApi } from '../api/suppliers'
 import { categoriesApi } from '../api/categories'
+import { subcategoriesApi } from '../api/subcategories'
 import styles from './SupplierFormPage.module.css'
 
 const EMPTY_FORM = {
@@ -21,29 +23,38 @@ const EMPTY_FORM = {
   city: '',
   region: '',
   address: '',
+  inn: '',
   min_order_amount: '',
   price_range: '',
-  has_certificates: false,
   certificate_details: '',
+  certificate_urls: [],
   delivery_conditions: '',
   notes: '',
   category_ids: [],
+  subcategory_ids: [],
 }
 
 export default function SupplierFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
+  const { isAuthenticated } = useAuth()
   const isEdit = Boolean(id)
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [categories, setCategories] = useState([])
+  const [subcategories, setSubcategories] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
   // Загрузка категорий
   useEffect(() => {
     categoriesApi.list().then(setCategories).catch(() => {})
+  }, [])
+
+  // Загрузка подкатегорий
+  useEffect(() => {
+    subcategoriesApi.list().then(setSubcategories).catch(() => {})
   }, [])
 
   // Загрузка данных для редактирования
@@ -55,6 +66,8 @@ export default function SupplierFormPage() {
             ...EMPTY_FORM,
             ...s,
             category_ids: s.categories?.map((c) => c.id) || [],
+            subcategory_ids: s.subcategories?.map((sc) => sc.id) || [],
+            certificate_urls: s.certificate_urls || [],
           })
         })
         .catch(() => toast('Поставщик не найден', 'error'))
@@ -80,7 +93,13 @@ export default function SupplierFormPage() {
 
     setLoading(true)
     try {
-      const payload = { ...form }
+      const payload = {
+        ...form,
+        certificate_urls: (form.certificate_urls || []).filter(Boolean),
+        min_order_amount: form.min_order_amount
+          ? Number(String(form.min_order_amount).replace(',', '.'))
+          : null,
+      }
       if (isEdit) {
         await suppliersApi.update(id, payload)
         toast('Поставщик обновлён', 'success')
@@ -109,6 +128,71 @@ export default function SupplierFormPage() {
         ? prev.category_ids.filter((id) => id !== numId)
         : [...prev.category_ids, numId],
     }))
+  }
+
+  const toggleSubcategory = (scId) => {
+    const numId = Number(scId)
+    setForm((prev) => ({
+      ...prev,
+      subcategory_ids: prev.subcategory_ids.includes(numId)
+        ? prev.subcategory_ids.filter((id) => id !== numId)
+        : [...prev.subcategory_ids, numId],
+    }))
+  }
+
+  const addCertUrl = () => {
+    setForm((prev) => ({
+      ...prev,
+      certificate_urls: [...(prev.certificate_urls || []), ''],
+    }))
+  }
+
+  const updateCertUrl = (idx, value) => {
+    setForm((prev) => ({
+      ...prev,
+      certificate_urls: prev.certificate_urls.map((u, i) => (i === idx ? value : u)),
+    }))
+  }
+
+  const removeCertUrl = (idx) => {
+    setForm((prev) => ({
+      ...prev,
+      certificate_urls: prev.certificate_urls.filter((_, i) => i !== idx),
+    }))
+  }
+
+  // Подкатегории, видимые в форме (только из выбранных категорий)
+  const visibleSubcategories = subcategories.filter((sc) =>
+    form.category_ids.includes(sc.category_id)
+  )
+
+  if (!isAuthenticated) {
+    return (
+      <div className={styles.container}>
+        <Link to={isEdit ? `/suppliers/${id}` : '/'} className={styles.back}>
+          <ArrowLeft style={{ width: 16, height: 16 }} />
+          {isEdit ? 'Назад к поставщику' : 'Назад к каталогу'}
+        </Link>
+        <div style={{
+          textAlign: 'center',
+          padding: '64px 24px',
+          background: 'var(--surface, #fff)',
+          borderRadius: 12,
+          marginTop: 16,
+        }}>
+          <LogIn style={{ width: 40, height: 40, color: 'var(--text-muted, #94a3b8)', marginBottom: 12 }} />
+          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600 }}>
+            Войдите, чтобы {isEdit ? 'редактировать' : 'добавлять'} поставщика
+          </h2>
+          <p style={{ color: 'var(--text-secondary, #64748b)', margin: '0 0 20px' }}>
+            Для этого действия требуется авторизация
+          </p>
+          <Link to="/login">
+            <Button variant="primary" icon={LogIn}>Войти</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -149,6 +233,13 @@ export default function SupplierFormPage() {
                 placeholder="Московская область"
                 className={styles.fullWidth}
               />
+              <Input
+                label="ИНН"
+                value={form.inn}
+                onChange={(e) => handleChange('inn', e.target.value)}
+                placeholder="10 или 12 цифр"
+                maxLength={12}
+              />
               <Textarea
                 label="Описание"
                 value={form.description}
@@ -177,6 +268,36 @@ export default function SupplierFormPage() {
                 </Button>
               ))}
             </div>
+          </Card.Content>
+        </Card>
+
+        {/* Подкатегории */}
+        <Card>
+          <Card.Header title="Подкатегории товаров" />
+          <Card.Content>
+            {form.category_ids.length === 0 ? (
+              <p style={{ fontSize: 14, color: 'var(--text-muted, #94a3b8)' }}>
+                Сначала выберите категории
+              </p>
+            ) : visibleSubcategories.length === 0 ? (
+              <p style={{ fontSize: 14, color: 'var(--text-muted, #94a3b8)' }}>
+                Для выбранных категорий пока нет подкатегорий
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {visibleSubcategories.map((sc) => (
+                  <Button
+                    key={sc.id}
+                    type="button"
+                    variant={form.subcategory_ids.includes(sc.id) ? 'primary' : 'outline'}
+                    size="small"
+                    onClick={() => toggleSubcategory(sc.id)}
+                  >
+                    {sc.name}
+                  </Button>
+                ))}
+              </div>
+            )}
           </Card.Content>
         </Card>
 
@@ -233,10 +354,11 @@ export default function SupplierFormPage() {
                 placeholder="Средний"
               />
               <Input
-                label="Минимальный заказ"
-                value={form.min_order_amount}
+                label="Минимальный заказ (₽)"
+                type="number"
+                value={form.min_order_amount ?? ''}
                 onChange={(e) => handleChange('min_order_amount', e.target.value)}
-                placeholder="от 10 000 ₽"
+                placeholder="10000"
               />
               <Textarea
                 label="Условия доставки"
@@ -245,24 +367,60 @@ export default function SupplierFormPage() {
                 placeholder="Бесплатная доставка от 50 000 ₽..."
                 className={styles.fullWidth}
               />
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={form.has_certificates}
-                    onChange={(e) => handleChange('has_certificates', e.target.checked)}
+              {(form.certificate_urls.length > 0 || form.certificate_details) ? (
+                <>
+                  <Input
+                    label="Детали сертификатов"
+                    value={form.certificate_details}
+                    onChange={(e) => handleChange('certificate_details', e.target.value)}
+                    placeholder="ISO 22000, ХАССП..."
+                    className={styles.fullWidth}
                   />
-                  <span style={{ fontSize: 14 }}>Есть сертификаты</span>
-                </label>
-              </div>
-              {form.has_certificates && (
-                <Input
-                  label="Детали сертификатов"
-                  value={form.certificate_details}
-                  onChange={(e) => handleChange('certificate_details', e.target.value)}
-                  placeholder="ISO 22000, ХАССП..."
-                  className={styles.fullWidth}
-                />
+                  <div className={styles.fullWidth} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
+                      Ссылки на сертификаты / декларации
+                    </span>
+                    {(form.certificate_urls || []).map((url, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 8 }}>
+                        <Input
+                          value={url}
+                          onChange={(e) => updateCertUrl(idx, e.target.value)}
+                          placeholder="https://example.com/certificate.pdf"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => removeCertUrl(idx)}
+                          title="Удалить ссылку"
+                        >
+                          <X style={{ width: 16, height: 16 }} />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="small"
+                      icon={Plus}
+                      onClick={addCertUrl}
+                      style={{ alignSelf: 'flex-start' }}
+                    >
+                      Добавить ссылку
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.fullWidth}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="small"
+                    icon={Plus}
+                    onClick={addCertUrl}
+                  >
+                    Добавить сертификат
+                  </Button>
+                </div>
               )}
             </div>
           </Card.Content>

@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
 import { useToast } from '../components/ui/Toast'
+import { useAuth } from '../context/AuthContext'
 import { suppliersApi } from '../api/suppliers'
 import styles from './SupplierDetailPage.module.css'
 
@@ -13,6 +14,7 @@ export default function SupplierDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
+  const { isAuthenticated } = useAuth()
   const [supplier, setSupplier] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -46,18 +48,31 @@ export default function SupplierDetailPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>{supplier.name}</h1>
-          {supplier.city && (
+          {(supplier.city || supplier.inn) && (
             <p className={styles.city}>
-              <MapPin style={{ width: 14, height: 14, marginRight: 4, verticalAlign: -2 }} />
-              {[supplier.city, supplier.region].filter(Boolean).join(', ')}
+              {supplier.city && (
+                <>
+                  <MapPin style={{ width: 14, height: 14, marginRight: 4, verticalAlign: -2 }} />
+                  {[supplier.city, supplier.region].filter(Boolean).join(', ')}
+                </>
+              )}
+              {supplier.inn && (
+                <span style={{ marginLeft: 12 }}>
+                  ИНН: {supplier.inn}
+                </span>
+              )}
             </p>
           )}
         </div>
         <div className={styles.actions}>
-          <Link to={`/suppliers/${id}/edit`}>
-            <Button variant="outline" icon={Pencil}>Редактировать</Button>
-          </Link>
-          <Button variant="danger" icon={Trash2} onClick={handleDelete}>Удалить</Button>
+          {isAuthenticated && (
+            <>
+              <Link to={`/suppliers/${id}/edit`}>
+                <Button variant="outline" icon={Pencil}>Редактировать</Button>
+              </Link>
+              <Button variant="danger" icon={Trash2} onClick={handleDelete}>Удалить</Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -69,6 +84,21 @@ export default function SupplierDetailPage() {
               <div className={styles.badges}>
                 {supplier.categories.map((c) => (
                   <Badge key={c.id} variant="neutral">{c.name}</Badge>
+                ))}
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
+      )}
+
+      {supplier.subcategories?.length > 0 && (
+        <Card>
+          <Card.Content>
+            <div className={styles.section}>
+              <span className={styles.sectionTitle}>Подкатегории</span>
+              <div className={styles.badges}>
+                {supplier.subcategories.map((sc) => (
+                  <Badge key={sc.id} variant="neutral">{sc.name}</Badge>
                 ))}
               </div>
             </div>
@@ -136,7 +166,11 @@ export default function SupplierDetailPage() {
               </div>
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Мин. заказ</span>
-                <span className={styles.fieldValue}>{supplier.min_order_amount || '—'}</span>
+                <span className={styles.fieldValue}>
+                  {supplier.min_order_amount != null
+                    ? `${Number(supplier.min_order_amount).toLocaleString('ru-RU')} ₽`
+                    : '—'}
+                </span>
               </div>
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Доставка</span>
@@ -149,9 +183,29 @@ export default function SupplierDetailPage() {
                   <Shield style={{width:12,height:12,verticalAlign:-1}} /> Сертификаты
                 </span>
                 <span className={styles.fieldValue}>
-                  {supplier.has_certificates
-                    ? supplier.certificate_details || 'Да'
-                    : 'Нет'}
+                  {(supplier.certificate_urls?.length > 0) ? (
+                    <>
+                      {supplier.certificate_details && (
+                        <div>{supplier.certificate_details}</div>
+                      )}
+                      <ul style={{ marginTop: 4, paddingLeft: 16 }}>
+                        {supplier.certificate_urls.map((url, idx) => (
+                          <li key={idx} style={{ fontSize: 14 }}>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: 'var(--primary, #4f46e5)' }}
+                            >
+                              Сертификат {idx + 1}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    supplier.certificate_details || 'Нет'
+                  )}
                 </span>
               </div>
               {supplier.address && (

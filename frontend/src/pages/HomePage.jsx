@@ -15,12 +15,17 @@ export default function HomePage() {
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Фильтры
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [location, setLocation] = useState('')
   const [appliedLocation, setAppliedLocation] = useState(null)
+
+  // Сортировка
+  const [sortBy, setSortBy] = useState('name')
+  const [sortOrder, setSortOrder] = useState('asc')
 
   // Загрузка категорий
   useEffect(() => {
@@ -30,6 +35,7 @@ export default function HomePage() {
   // Поиск с debounce
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const hasFilters = search || categoryId || appliedLocation
       if (hasFilters) {
@@ -38,6 +44,8 @@ export default function HomePage() {
           category_id: categoryId || undefined,
           page,
           per_page: 20,
+          sort_by: sortBy,
+          sort_order: sortOrder,
         }
         if (appliedLocation?.type === 'city') {
           params.city = appliedLocation.value
@@ -51,17 +59,22 @@ export default function HomePage() {
         setTotal(data.total)
         setPages(data.pages)
       } else {
-        const data = await suppliersApi.list(page)
+        const data = await suppliersApi.list(page, 20, sortBy, sortOrder)
         setSuppliers(data.items)
         setTotal(data.total)
         setPages(data.pages)
       }
-    } catch {
+    } catch (err) {
       setSuppliers([])
+      setTotal(0)
+      setPages(1)
+      setError(err.kind === 'network'
+        ? 'Не удалось подключиться к серверу. Проверьте, что бэкенд запущен.'
+        : (err.message || 'Ошибка загрузки данных'))
     } finally {
       setLoading(false)
     }
-  }, [search, categoryId, appliedLocation, page])
+  }, [search, categoryId, appliedLocation, page, sortBy, sortOrder])
 
   useEffect(() => {
     fetchData()
@@ -77,6 +90,16 @@ export default function HomePage() {
     setCategoryId('')
     setLocation('')
     setAppliedLocation(null)
+    setPage(1)
+  }
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('asc')
+    }
     setPage(1)
   }
 
@@ -98,6 +121,18 @@ export default function HomePage() {
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0' }}>
           Загрузка...
         </p>
+      ) : error ? (
+        <div style={{
+          textAlign: 'center',
+          color: 'var(--danger, #c0392b)',
+          background: 'var(--danger-bg, #fdecea)',
+          padding: '16px',
+          borderRadius: '8px',
+          margin: '24px 0',
+          fontWeight: 500,
+        }}>
+          {error}
+        </div>
       ) : suppliers.length === 0 ? (
         <EmptyState
           icon={PackageSearch}
@@ -109,7 +144,12 @@ export default function HomePage() {
           <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
             Найдено: {total}
           </p>
-          <SupplierList suppliers={suppliers} />
+          <SupplierList
+            suppliers={suppliers}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+          />
           {pages > 1 && (
             <div className={styles.pagination}>
               <Button

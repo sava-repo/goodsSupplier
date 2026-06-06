@@ -54,6 +54,7 @@ def create_app():
             event.listen(db.engine, 'connect', _register_unicode_lower)
 
     from app.routes.categories import categories_bp
+    from app.routes.subcategories import subcategories_bp
     from app.routes.suppliers import suppliers_bp
     from app.routes.search import search_bp
     from app.routes.auth import auth_bp
@@ -62,6 +63,7 @@ def create_app():
     from app.routes.locations import locations_bp
 
     app.register_blueprint(categories_bp, url_prefix='/api/categories')
+    app.register_blueprint(subcategories_bp, url_prefix='/api/subcategories')
     app.register_blueprint(suppliers_bp, url_prefix='/api/suppliers')
     app.register_blueprint(search_bp, url_prefix='/api/suppliers')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')

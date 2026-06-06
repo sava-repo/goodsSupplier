@@ -10,9 +10,9 @@ import styles from './ComparePage.module.css'
 const ROWS = [
   { key: 'city', label: 'Город' },
   { key: 'price_range', label: 'Ценовой диапазон' },
-  { key: 'min_order_amount', label: 'Мин. заказ' },
+  { key: 'min_order_amount', label: 'Мин. заказ', render: (v) => v != null ? `${Number(v).toLocaleString('ru-RU')} ₽` : '—' },
   { key: 'delivery_conditions', label: 'Доставка' },
-  { key: 'has_certificates', label: 'Сертификаты', render: (v) => v ? '✅ Да' : '❌ Нет' },
+  { key: 'certificate_urls', label: 'Сертификаты', render: (v) => (v?.length > 0) ? '✅ Да' : '❌ Нет' },
   { key: 'contact_person', label: 'Контактное лицо' },
   { key: 'phone', label: 'Телефон' },
   { key: 'email', label: 'Email' },

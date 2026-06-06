@@ -34,36 +34,19 @@
 
 .nameCol { min-width: 180px; }
 .cityCol { min-width: 100px; }
-.catCol { min-width: 140px; }
 .minCol { min-width: 100px; white-space: nowrap; }
 .certCol { min-width: 80px; text-align: center; }
 .noteCol { min-width: 200px; }
 .compareCol { width: 60px; text-align: center; white-space: nowrap; }
 
 .link {
-  color: var(--primary, #4f46e5);
+  color: #132c33;
   text-decoration: none;
   font-weight: 500;
 }
 
 .link:hover {
   text-decoration: underline;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: var(--primary-light, rgba(79, 70, 229, 0.1));
-  color: var(--primary, #4f46e5);
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .certYes {
@@ -154,4 +137,29 @@
   background: var(--color-info-soft, rgba(79, 70, 229, 0.1));
   border-color: var(--color-info, #4f46e5);
   color: var(--color-info, #4f46e5);
+}
+
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortBtn:hover {
+  color: var(--primary, #4f46e5);
+}
+
+.sortIcon {
+  display: inline-flex;
+  align-items: center;
 }

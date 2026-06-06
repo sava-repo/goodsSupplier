@@ -1,13 +1,13 @@
 import { useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, X, FileText, GitCompare } from 'lucide-react'
+import { Check, X, GitCompare, ArrowUp, ArrowDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCompare } from '../context/CompareContext'
 import { useToast } from './ui/Toast'
 import { api } from '../api/client'
 import styles from './SupplierList.module.css'
 
-export default function SupplierList({ suppliers, onNoteUpdate }) {
+export default function SupplierList({ suppliers, onNoteUpdate, sortBy, sortOrder, onSort }) {
   const { isAuthenticated } = useAuth()
   const { isInCompare, addId, removeId } = useCompare()
   const toast = useToast()
@@ -55,18 +55,35 @@ export default function SupplierList({ suppliers, onNoteUpdate }) {
     }
   }
 
+  const SortIcon = ({ field }) => {
+    if (sortBy !== field) return null
+    return sortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+  }
+
+  const SortHeader = ({ field, label, className }) => (
+    <th className={className}>
+      <button
+        type="button"
+        className={styles.sortBtn}
+        onClick={() => onSort?.(field)}
+      >
+        {label}
+        <span className={styles.sortIcon}><SortIcon field={field} /></span>
+      </button>
+    </th>
+  )
+
   return (
     <div className={styles.wrapper}>
       <table className={styles.table}>
         <thead>
           <tr>
-            <th className={styles.nameCol}>Название</th>
-            <th className={styles.cityCol}>Город</th>
-            <th className={styles.catCol}>Категории</th>
-            <th className={styles.minCol}>Мин. заказ</th>
-            <th className={styles.certCol}>Сертификаты</th>
-            <th className={styles.noteCol}>Заметка</th>
-            <th className={styles.compareCol}>Сравнить</th>
+            <SortHeader field="name" label="Название" className={styles.nameCol} />
+            <SortHeader field="city" label="Город" className={styles.cityCol} />
+            <SortHeader field="min_order_amount" label="Мин. заказ" className={styles.minCol} />
+            <SortHeader field="certificates" label="Сертификаты" className={styles.certCol} />
+            {isAuthenticated && <th className={styles.noteCol}>Заметка</th>}
+            {isAuthenticated && <th className={styles.compareCol}>Сравнить</th>}
           </tr>
         </thead>
         <tbody>
@@ -80,16 +97,13 @@ export default function SupplierList({ suppliers, onNoteUpdate }) {
                   </Link>
                 </td>
                 <td className={styles.cityCol}>{s.city || '—'}</td>
-                <td className={styles.catCol}>
-                  <div className={styles.badges}>
-                    {(s.categories || []).map((c) => (
-                      <span key={c.id} className={styles.badge}>{c.name}</span>
-                    ))}
-                  </div>
+                <td className={styles.minCol}>
+                  {s.min_order_amount != null
+                    ? `${Number(s.min_order_amount).toLocaleString('ru-RU')} ₽`
+                    : '—'}
                 </td>
-                <td className={styles.minCol}>{s.min_order_amount || '—'}</td>
                 <td className={styles.certCol}>
-                  {s.has_certificates ? (
+                  {(s.certificate_urls?.length > 0) ? (
                     <span className={styles.certYes} title={s.certificate_details || 'Есть сертификаты'}>
                       <Check size={16} />
                     </span>
@@ -99,8 +113,8 @@ export default function SupplierList({ suppliers, onNoteUpdate }) {
                     </span>
                   )}
                 </td>
-                <td className={styles.noteCol}>
-                  {isAuthenticated ? (
+                {isAuthenticated && (
+                  <td className={styles.noteCol}>
                     <div className={styles.noteWrapper}>
                       <input
                         type="text"
@@ -111,14 +125,10 @@ export default function SupplierList({ suppliers, onNoteUpdate }) {
                       />
                       {saving[s.id] && <span className={styles.saving}>⏳</span>}
                     </div>
-                  ) : (
-                    <span className={styles.notePlaceholder}>
-                      <FileText size={14} /> Войдите
-                    </span>
-                  )}
-                </td>
-                <td className={styles.compareCol}>
-                  {isAuthenticated ? (
+                  </td>
+                )}
+                {isAuthenticated && (
+                  <td className={styles.compareCol}>
                     <button
                       type="button"
                       className={
@@ -132,10 +142,8 @@ export default function SupplierList({ suppliers, onNoteUpdate }) {
                     >
                       {inCompare ? <Check size={16} /> : <GitCompare size={16} />}
                     </button>
-                  ) : (
-                    <span className={styles.notePlaceholder}>—</span>
-                  )}
-                </td>
+                  </td>
+                )}
               </tr>
             )
           })}

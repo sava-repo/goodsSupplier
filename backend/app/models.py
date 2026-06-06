@@ -11,6 +11,14 @@ supplier_categories = db.Table(
 )
 
 
+# Связующая таблица many-to-many поставщик-подкатегория
+supplier_subcategories = db.Table(
+    'supplier_subcategories',
+    db.Column('supplier_id', db.Integer, db.ForeignKey('suppliers.id'), primary_key=True),
+    db.Column('subcategory_id', db.Integer, db.ForeignKey('subcategories.id'), primary_key=True),
+)
+
+
 class Category(db.Model):
     __tablename__ = 'categories'
 
@@ -34,6 +42,40 @@ class Category(db.Model):
         }
 
 
+class Subcategory(db.Model):
+    __tablename__ = 'subcategories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    category = db.relationship('Category', backref=db.backref(
+        'subcategories', lazy='select'
+    ))
+    suppliers = db.relationship(
+        'Supplier',
+        secondary=supplier_subcategories,
+        backref=db.backref('subcategories', lazy='select'),
+        lazy='dynamic',
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'name', 'category_id', name='uq_subcategory_name_per_category'
+        ),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'category_id': self.category_id,
+            'description': self.description,
+            'supplier_count': self.suppliers.count(),
+        }
+
+
 class Supplier(db.Model):
     __tablename__ = 'suppliers'
 
@@ -48,10 +90,11 @@ class Supplier(db.Model):
     city = db.Column(db.String(100), nullable=False)
     region = db.Column(db.String(100), nullable=True)
     address = db.Column(db.String(300), nullable=True)
-    min_order_amount = db.Column(db.String(100), nullable=True)
+    inn = db.Column(db.String(12), nullable=True)
+    min_order_amount = db.Column(db.Numeric(12, 2), nullable=True)
     price_range = db.Column(db.String(50), nullable=True)
-    has_certificates = db.Column(db.Boolean, default=False)
     certificate_details = db.Column(db.Text, nullable=True)
+    certificate_urls = db.Column(db.JSON, nullable=True)
     delivery_conditions = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
@@ -78,10 +121,11 @@ class Supplier(db.Model):
             'city': self.city,
             'region': self.region,
             'address': self.address,
+            'inn': self.inn,
             'min_order_amount': self.min_order_amount,
             'price_range': self.price_range,
-            'has_certificates': self.has_certificates,
             'certificate_details': self.certificate_details,
+            'certificate_urls': self.certificate_urls or [],
             'delivery_conditions': self.delivery_conditions,
             'notes': self.notes,
             'is_active': self.is_active,
@@ -91,6 +135,10 @@ class Supplier(db.Model):
         if include_categories:
             data['categories'] = [
                 {'id': c.id, 'name': c.name} for c in self.categories
+            ]
+            data['subcategories'] = [
+                {'id': sc.id, 'name': sc.name, 'category_id': sc.category_id}
+                for sc in self.subcategories
             ]
         return data
 
