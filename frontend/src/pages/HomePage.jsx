@@ -118,19 +118,11 @@ export default function HomePage() {
       />
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0' }}>
+        <p className={styles.statusText}>
           Загрузка...
         </p>
       ) : error ? (
-        <div style={{
-          textAlign: 'center',
-          color: 'var(--danger, #c0392b)',
-          background: 'var(--danger-bg, #fdecea)',
-          padding: '16px',
-          borderRadius: '8px',
-          margin: '24px 0',
-          fontWeight: 500,
-        }}>
+        <div className={styles.errorBanner}>
           {error}
         </div>
       ) : suppliers.length === 0 ? (
@@ -141,7 +133,7 @@ export default function HomePage() {
         />
       ) : (
         <>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+          <p className={styles.resultCount}>
             Найдено: {total}
           </p>
           <SupplierList

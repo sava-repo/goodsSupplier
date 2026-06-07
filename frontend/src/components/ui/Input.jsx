@@ -1,6 +1,12 @@
+/**
+ * Поля ввода: Input, SearchInput, Select, Textarea.
+ *
+ * Каждый компонент поддерживает label, helper, error и className.
+ */
 import { Search } from 'lucide-react'
 import styles from './Input.module.css'
 
+/** Обычное текстовое поле с label и error. */
 export function Input({
   label,
   helper,
@@ -21,6 +27,7 @@ export function Input({
   )
 }
 
+/** Поле поиска с иконкой лупы слева. */
 export function SearchInput({
   label,
   helper,
@@ -45,6 +52,7 @@ export function SearchInput({
   )
 }
 
+/** Выпадающий список select. */
 export function Select({
   label,
   helper,
@@ -74,6 +82,7 @@ export function Select({
   )
 }
 
+/** Многострочное текстовое поле. */
 export function Textarea({
   label,
   helper,

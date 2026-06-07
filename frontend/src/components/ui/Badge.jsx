@@ -1,3 +1,12 @@
+/**
+ * Цветной значок-метка (pill).
+ *
+ * @param {{
+ *   children: React.ReactNode,
+ *   variant?: 'success' | 'warning' | 'danger' | 'neutral',
+ *   className?: string,
+ * }} props
+ */
 import styles from './Badge.module.css'
 
 const VARIANT_MAP = {

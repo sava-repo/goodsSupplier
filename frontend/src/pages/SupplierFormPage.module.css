@@ -49,3 +49,62 @@
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--bg-border-light);
 }
+
+.authGuard {
+  text-align: center;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  margin-top: var(--spacing-md);
+}
+
+.authGuardIcon {
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-md);
+}
+
+.authGuardTitle {
+  margin: 0 0 var(--spacing-sm);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.authGuardText {
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-base);
+}
+
+.chipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.chipHint {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.certSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.certSectionLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.certUrlRow {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.alignSelfStart {
+  align-self: flex-start;
+}

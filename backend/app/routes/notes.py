@@ -1,25 +1,47 @@
+"""Заметки пользователей по поставщикам.
+
+Каждый авторизованный пользователь может оставить одну личную заметку
+на поставщика (создать, прочитать, обновить, удалить).
+Все эндпоинты требуют JWT.
+
+* ``GET    /api/suppliers/<id>/note``  — получить заметку.
+* ``PUT    /api/suppliers/<id>/note``  — создать или обновить заметку.
+* ``DELETE /api/suppliers/<id>/note``  — удалить заметку.
+"""
+from __future__ import annotations
+
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from marshmallow import Schema, fields, ValidationError
+
 from app.database import db
 from app.models import SupplierNote, Supplier
+from app.utils.db import get_object_or_404
 
 notes_bp = Blueprint('notes', __name__)
 
 
 class NoteSchema(Schema):
+    """Схема валидации тела заметки (поле ``note`` — опциональное)."""
+
     note = fields.String(load_default=None)
 
 
 @notes_bp.route('/<int:supplier_id>/note', methods=['GET'])
 @jwt_required()
-def get_note(supplier_id):
-    """Получить заметку текущего пользователя по поставщику."""
+def get_note(supplier_id: int):
+    """GET /api/suppliers/<id>/note — получить заметку текущего пользователя.
+
+    Returns:
+        200 — ``{"supplier_id": N, "note": "текст"}`` или
+        ``{"supplier_id": N, "note": null}`` если заметки нет.
+        404 — поставщик не найден.
+    """
     user_id = int(get_jwt_identity())
 
-    supplier = Supplier.query.get(supplier_id)
-    if not supplier:
-        return jsonify({'error': 'Поставщик не найден'}), 404
+    supplier, err = get_object_or_404(Supplier, supplier_id, 'Поставщик не найден')
+    if err:
+        return err
 
     note_obj = SupplierNote.query.filter_by(
         user_id=user_id, supplier_id=supplier_id
@@ -33,16 +55,24 @@ def get_note(supplier_id):
 
 @notes_bp.route('/<int:supplier_id>/note', methods=['PUT'])
 @jwt_required()
-def upsert_note(supplier_id):
-    """Создать или обновить заметку."""
+def upsert_note(supplier_id: int):
+    """PUT /api/suppliers/<id>/note — создать или обновить заметку.
+
+    Тело: ``{"note": "текст"}`` (поле ``note`` может быть ``null``).
+
+    Returns:
+        200 — обновлённая заметка.
+        400 — данные отсутствуют или невалидны.
+        404 — поставщик не найден.
+    """
     user_id = int(get_jwt_identity())
 
-    supplier = Supplier.query.get(supplier_id)
-    if not supplier:
-        return jsonify({'error': 'Поставщик не найден'}), 404
+    supplier, err = get_object_or_404(Supplier, supplier_id, 'Поставщик не найден')
+    if err:
+        return err
 
-    data = request.get_json()
-    if not data:
+    data = request.get_json(silent=True)
+    if data is None:
         return jsonify({'error': 'Отсутствуют данные'}), 400
 
     schema = NoteSchema()
@@ -71,8 +101,13 @@ def upsert_note(supplier_id):
 
 @notes_bp.route('/<int:supplier_id>/note', methods=['DELETE'])
 @jwt_required()
-def delete_note(supplier_id):
-    """Удалить заметку."""
+def delete_note(supplier_id: int):
+    """DELETE /api/suppliers/<id>/note — удалить заметку.
+
+    Returns:
+        200 — ``{"message": "Заметка удалена"}``.
+        404 — заметка не найдена.
+    """
     user_id = int(get_jwt_identity())
 
     note_obj = SupplierNote.query.filter_by(

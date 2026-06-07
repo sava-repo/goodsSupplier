@@ -1,12 +1,29 @@
+"""Фабрика Flask-приложения.
+
+Создаёт экземпляр Flask, инициализирует расширения (SQLAlchemy, JWT, CORS,
+Migrate), регистрирует blueprints и обработчики ошибок.
+
+Использование::
+
+    from app import create_app
+    app = create_app()
+
+Конфигурация выбирается через переменную окружения ``FLASK_ENV``
+(см. :mod:`app.config`).
+"""
+from __future__ import annotations
+
 import os
 import sqlite3
-from datetime import timedelta
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from sqlalchemy import event
-from app.database import db
 from flask_migrate import Migrate
+
+from app.config import get_config
+from app.database import db
+
 
 migrate = Migrate()
 
@@ -26,24 +43,44 @@ def _register_unicode_lower(dbapi_conn, _):
         )
 
 
-def create_app():
+def _ensure_jwt_secret(app: Flask) -> None:
+    """Гарантирует, что JWT_SECRET_KEY задан.
+
+    В режиме production отсутствие ключа — критическая ошибка:
+    приложение не стартует. В development — фолбэк на dev-секрет.
+    """
+    if not app.config.get('JWT_SECRET_KEY'):
+        if app.config.get('DEBUG'):
+            app.config['JWT_SECRET_KEY'] = 'dev-secret-do-not-use-in-prod'
+        else:
+            raise RuntimeError(
+                'JWT_SECRET_KEY обязателен в production. '
+                'Задайте его через переменную окружения.'
+            )
+
+
+def create_app() -> Flask:
+    """Создать и настроить Flask-приложение.
+
+    Returns:
+        Готовый к использованию экземпляр :class:`Flask`.
+    """
+    config_cls = get_config()
     app = Flask(__name__)
+    app.config.from_object(config_cls)
 
-    database_url = os.environ.get('DATABASE_URL')
-    if not database_url:
-        # Локальная разработка без Docker — используем SQLite
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        database_url = 'sqlite:///' + os.path.join(basedir, '..', 'dev.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # JWT Configuration
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-change-in-production')
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+    _ensure_jwt_secret(app)
 
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app)
+
+    # CORS: только разрешённые источники (см. CORS_ORIGINS в config.py)
+    CORS(
+        app,
+        resources={r'/api/*': {'origins': app.config['CORS_ORIGINS']}},
+        supports_credentials=False,
+    )
+
     JWTManager(app)
 
     # SQLite: переопределяем LOWER() для поддержки Unicode (кириллицы).
@@ -53,30 +90,35 @@ def create_app():
         if db.engine.dialect.name == 'sqlite':
             event.listen(db.engine, 'connect', _register_unicode_lower)
 
-    from app.routes.categories import categories_bp
-    from app.routes.subcategories import subcategories_bp
-    from app.routes.suppliers import suppliers_bp
-    from app.routes.search import search_bp
+    # Регистрируем blueprints
     from app.routes.auth import auth_bp
-    from app.routes.notes import notes_bp
+    from app.routes.categories import categories_bp
     from app.routes.cities import cities_bp
     from app.routes.locations import locations_bp
+    from app.routes.notes import notes_bp
+    from app.routes.search import search_bp
+    from app.routes.subcategories import subcategories_bp
+    from app.routes.suppliers import suppliers_bp
 
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(categories_bp, url_prefix='/api/categories')
     app.register_blueprint(subcategories_bp, url_prefix='/api/subcategories')
     app.register_blueprint(suppliers_bp, url_prefix='/api/suppliers')
     app.register_blueprint(search_bp, url_prefix='/api/suppliers')
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(notes_bp, url_prefix='/api/suppliers')
     app.register_blueprint(cities_bp, url_prefix='/api/suppliers')
     app.register_blueprint(locations_bp, url_prefix='/api/suppliers')
 
     @app.route('/api/health')
     def health():
+        """Health-check: быстрый ответ для проверки работоспособности."""
         return {'status': 'ok'}
 
-    # Создаём таблицы если их нет (для SQLite)
-    with app.app_context():
-        db.create_all()
+    # Глобальные обработчики ошибок (404, 500, JWT)
+    from app.errors import register_error_handlers
+    register_error_handlers(app)
+
+    # Примечание: db.create_all() убран — управление схемой через Alembic.
+    # Команда применения миграций: ``flask --app app db upgrade``.
 
     return app

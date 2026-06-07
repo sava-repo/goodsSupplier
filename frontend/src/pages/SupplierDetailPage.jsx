@@ -36,13 +36,13 @@ export default function SupplierDetailPage() {
     }
   }
 
-  if (loading) return <p style={{ textAlign: 'center', padding: 48 }}>Загрузка...</p>
+  if (loading) return <p className={styles.loading}>Загрузка...</p>
   if (!supplier) return <EmptyState title="Поставщик не найден" />
 
   return (
     <div className={styles.container}>
       <Link to="/" className={styles.back}>
-        <ArrowLeft style={{ width: 16, height: 16 }} /> Назад к каталогу
+        <ArrowLeft /> Назад к каталогу
       </Link>
 
       <div className={styles.header}>
@@ -52,12 +52,12 @@ export default function SupplierDetailPage() {
             <p className={styles.city}>
               {supplier.city && (
                 <>
-                  <MapPin style={{ width: 14, height: 14, marginRight: 4, verticalAlign: -2 }} />
+                  <MapPin className={styles.cityIcon} />
                   {[supplier.city, supplier.region].filter(Boolean).join(', ')}
                 </>
               )}
               {supplier.inn && (
-                <span style={{ marginLeft: 12 }}>
+                <span className={styles.inn}>
                   ИНН: {supplier.inn}
                 </span>
               )}
@@ -111,7 +111,7 @@ export default function SupplierDetailPage() {
           <Card.Content>
             <div className={styles.section}>
               <span className={styles.sectionTitle}>Описание</span>
-              <p style={{ fontSize: 14, lineHeight: 1.6 }}>{supplier.description}</p>
+              <p className={styles.description}>{supplier.description}</p>
             </div>
           </Card.Content>
         </Card>
@@ -130,7 +130,7 @@ export default function SupplierDetailPage() {
               )}
               {supplier.phone && (
                 <div className={styles.field}>
-                  <span className={styles.fieldLabel}><Phone style={{width:12,height:12,verticalAlign:-1}} /> Телефон</span>
+                  <span className={styles.fieldLabel}><Phone /> Телефон</span>
                   <span className={styles.fieldValue}>{supplier.phone}</span>
                 </div>
               )}
@@ -138,13 +138,13 @@ export default function SupplierDetailPage() {
             <div className={styles.row}>
               {supplier.email && (
                 <div className={styles.field}>
-                  <span className={styles.fieldLabel}><Mail style={{width:12,height:12,verticalAlign:-1}} /> Email</span>
+                  <span className={styles.fieldLabel}><Mail /> Email</span>
                   <span className={styles.fieldValue}>{supplier.email}</span>
                 </div>
               )}
               {supplier.website && (
                 <div className={styles.field}>
-                  <span className={styles.fieldLabel}><Globe style={{width:12,height:12,verticalAlign:-1}} /> Сайт</span>
+                  <span className={styles.fieldLabel}><Globe /> Сайт</span>
                   <a href={supplier.website} target="_blank" rel="noreferrer" className={styles.fieldValue}>
                     {supplier.website}
                   </a>
@@ -180,7 +180,7 @@ export default function SupplierDetailPage() {
             <div className={styles.row}>
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>
-                  <Shield style={{width:12,height:12,verticalAlign:-1}} /> Сертификаты
+                  <Shield /> Сертификаты
                 </span>
                 <span className={styles.fieldValue}>
                   {(supplier.certificate_urls?.length > 0) ? (
@@ -188,14 +188,14 @@ export default function SupplierDetailPage() {
                       {supplier.certificate_details && (
                         <div>{supplier.certificate_details}</div>
                       )}
-                      <ul style={{ marginTop: 4, paddingLeft: 16 }}>
+                      <ul className={styles.certList}>
                         {supplier.certificate_urls.map((url, idx) => (
-                          <li key={idx} style={{ fontSize: 14 }}>
+                          <li key={idx} className={styles.certItem}>
                             <a
                               href={url}
                               target="_blank"
                               rel="noreferrer"
-                              style={{ color: 'var(--primary, #4f46e5)' }}
+                              className={styles.certLink}
                             >
                               Сертификат {idx + 1}
                             </a>
@@ -224,7 +224,7 @@ export default function SupplierDetailPage() {
           <Card.Content>
             <div className={styles.section}>
               <span className={styles.sectionTitle}>Заметки</span>
-              <p style={{ fontSize: 14, lineHeight: 1.6 }}>{supplier.notes}</p>
+              <p className={styles.description}>{supplier.notes}</p>
             </div>
           </Card.Content>
         </Card>

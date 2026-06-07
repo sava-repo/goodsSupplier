@@ -1,9 +1,25 @@
+"""ORM-модели приложения.
+
+Определяет модели и их связь через таблицы-ассоциации:
+
+* :class:`Category` / :class:`Subcategory` — справочники категорий.
+* :class:`Supplier` — основной объект — поставщик.
+* :class:`User` — пользователь для JWT-аутентификации.
+* :class:`SupplierNote` — личные заметки пользователя о поставщике.
+
+Связь «поставщик ↔ категория» и «поставщик ↔ подкатегория» —
+many-to-many через таблицы :data:`supplier_categories` и
+:data:`supplier_subcategories`.
+"""
 from datetime import datetime, timezone
+from typing import Any, Optional
+
 from werkzeug.security import generate_password_hash, check_password_hash
+
 from app.database import db
 
 
-# Связующая таблица many-to-many
+# Связующая таблица many-to-many «поставщик ↔ категория».
 supplier_categories = db.Table(
     'supplier_categories',
     db.Column('supplier_id', db.Integer, db.ForeignKey('suppliers.id'), primary_key=True),
@@ -11,7 +27,7 @@ supplier_categories = db.Table(
 )
 
 
-# Связующая таблица many-to-many поставщик-подкатегория
+# Связующая таблица many-to-many «поставщик ↔ подкатегория».
 supplier_subcategories = db.Table(
     'supplier_subcategories',
     db.Column('supplier_id', db.Integer, db.ForeignKey('suppliers.id'), primary_key=True),
@@ -20,6 +36,12 @@ supplier_subcategories = db.Table(
 
 
 class Category(db.Model):
+    """Категория поставщика (справочник верхнего уровня).
+
+    Категории жёстко привязаны к поставщикам через M2M.
+    Уникальное ограничение — по полю ``name``.
+    """
+
     __tablename__ = 'categories'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -33,16 +55,32 @@ class Category(db.Model):
         lazy='dynamic',
     )
 
-    def to_dict(self):
+    def to_dict(self, supplier_count: Optional[int] = None) -> dict[str, Any]:
+        """Сериализация категории в dict.
+
+        Args:
+            supplier_count: количество поставщиков в этой категории.
+                Если передано, используется как готовое значение, что
+                позволяет избежать N+1 при списочном запросе.
+                Если ``None``, выполняется ``self.suppliers.count()``.
+        """
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'supplier_count': self.suppliers.count(),
+            'supplier_count': supplier_count
+                if supplier_count is not None
+                else self.suppliers.count(),
         }
 
 
 class Subcategory(db.Model):
+    """Подкатегория — дочерний элемент :class:`Category`.
+
+    Составной уникальный ключ ``(name, category_id)``:
+    в разных категориях могут быть подкатегории с одинаковым названием.
+    """
+
     __tablename__ = 'subcategories'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -66,17 +104,36 @@ class Subcategory(db.Model):
         ),
     )
 
-    def to_dict(self):
+    def to_dict(self, supplier_count: Optional[int] = None) -> dict[str, Any]:
+        """Сериализация подкатегории в dict.
+
+        Args:
+            supplier_count: количество поставщиков (для избежания N+1).
+        """
         return {
             'id': self.id,
             'name': self.name,
             'category_id': self.category_id,
             'description': self.description,
-            'supplier_count': self.suppliers.count(),
+            'supplier_count': supplier_count
+                if supplier_count is not None
+                else self.suppliers.count(),
         }
 
 
 class Supplier(db.Model):
+    """Поставщик — основная сущность приложения.
+
+    Поля «общая информация» (``name``, ``description``),
+    «контакты» (``phone``, ``email``, ``website``),
+    «адрес» (``city``, ``region``, ``address``, ``inn``),
+    «коммерческие условия» (``min_order_amount``, ``price_range``,
+    ``delivery_conditions``),
+    «сертификаты» (``certificate_details``, ``certificate_urls``).
+
+    Мягкое удаление — через флаг :attr:`is_active`.
+    """
+
     __tablename__ = 'suppliers'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -108,7 +165,17 @@ class Supplier(db.Model):
         nullable=False,
     )
 
-    def to_dict(self, include_categories=True):
+    def to_dict(self, include_categories: bool = True) -> dict[str, Any]:
+        """Сериализация поставщика в dict.
+
+        Args:
+            include_categories: включать ли ``categories`` и ``subcategories``
+                в результат. Полезно отключать для лёгких списков.
+
+        Returns:
+            dict со всеми полями поставщика.
+            ``certificate_urls`` всегда список (не ``None``).
+        """
         data = {
             'id': self.id,
             'name': self.name,
@@ -144,6 +211,12 @@ class Supplier(db.Model):
 
 
 class User(db.Model):
+    """Пользователь системы (для JWT-аутентификации).
+
+    Пароли хранятся как werkzeug-хеши (pbkdf2-sha256),
+    никогда — в открытом виде.
+    """
+
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -153,13 +226,16 @@ class User(db.Model):
         db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
-    def set_password(self, password):
+    def set_password(self, password: str) -> None:
+        """Сохранить хеш пароля."""
         self.password_hash = generate_password_hash(password)
 
-    def check_password(self, password):
+    def check_password(self, password: str) -> bool:
+        """Проверить пароль против сохранённого хеша."""
         return check_password_hash(self.password_hash, password)
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Сериализация без раскрытия password_hash."""
         return {
             'id': self.id,
             'username': self.username,
@@ -168,6 +244,12 @@ class User(db.Model):
 
 
 class SupplierNote(db.Model):
+    """Личная заметка пользователя о конкретном поставщике.
+
+    Один пользователь = одна заметка на поставщика
+    (уникальное ограничение ``uq_user_supplier``).
+    """
+
     __tablename__ = 'supplier_notes'
     __table_args__ = (
         db.UniqueConstraint('user_id', 'supplier_id', name='uq_user_supplier'),
@@ -187,7 +269,8 @@ class SupplierNote(db.Model):
     user = db.relationship('User', backref=db.backref('supplier_notes', lazy='select'))
     supplier = db.relationship('Supplier', backref=db.backref('user_notes', lazy='select'))
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Сериализация заметки (без раскрытия user_id)."""
         return {
             'id': self.id,
             'supplier_id': self.supplier_id,

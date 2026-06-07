@@ -27,7 +27,7 @@
 /* Варианты */
 .primary {
   background-color: var(--color-primary);
-  color: #FFFFFF;
+  color: var(--bg-surface);
 }
 .primary:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
@@ -65,10 +65,10 @@
 
 .danger {
   background-color: var(--color-danger);
-  color: #FFFFFF;
+  color: var(--bg-surface);
 }
 .danger:hover:not(:disabled) {
-  background-color: #e04545;
+  background-color: var(--color-danger-hover);
 }
 
 /* Размеры */

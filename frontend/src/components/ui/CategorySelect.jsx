@@ -1,5 +1,20 @@
+/**
+ * Кастомный выпадающий список для выбора категории.
+ *
+ * Поддерживает навигацию с клавиатуры (ArrowUp/Down/Enter/Escape)
+ * и закрытие по клику вне.
+ *
+ * @param {{
+ *   label?: string,
+ *   value: string,
+ *   onChange: (value: string) => void,
+ *   options: {value: string, label: string}[],
+ *   placeholder?: string,
+ * }} props
+ */
 import { useState, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useClickOutside } from '../../hooks'
 import styles from './CategorySelect.module.css'
 
 export default function CategorySelect({
@@ -18,15 +33,7 @@ export default function CategorySelect({
   const selectedIndex = allOptions.findIndex((o) => String(o.value) === String(value))
   const selectedLabel = selectedIndex >= 1 ? allOptions[selectedIndex].label : ''
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(wrapperRef, () => setIsOpen(false))
 
   useEffect(() => {
     if (isOpen) {

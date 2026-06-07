@@ -1,46 +1,74 @@
+"""Поиск и сравнение поставщиков.
+
+* ``GET /api/suppliers/search``  — поиск с фильтрами, сортировкой,
+  пагинацией. Не требует JWT (но при авторизации добавляет ``user_note``).
+* ``GET /api/suppliers/compare`` — данные до 5 поставщиков по id для
+  страницы сравнения.
+"""
+from __future__ import annotations
+
 from flask import Blueprint, request, jsonify
 from sqlalchemy import or_
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
-from app.database import db
-from app.models import Supplier, Category, SupplierNote
+
+from app.models import Supplier, Category
+from app.utils.pagination import attach_user_notes
+from app.utils.sorting import parse_sort_params
 
 search_bp = Blueprint('search', __name__)
 
+
+# Поля сортировки (см. parse_sort_params)
 SORTABLE_FIELDS = {
-    'name': lambda: Supplier.name,
-    'city': lambda: Supplier.city,
-    'min_order_amount': lambda: Supplier.min_order_amount,
-    'certificates': lambda: Supplier.certificate_urls.isnot(None),
+    'name': Supplier.name,
+    'city': Supplier.city,
+    'min_order_amount': Supplier.min_order_amount,
+    'certificates': Supplier.certificate_urls.isnot(None),
 }
+
+# Максимум поставщиков в одном сравнении
+MAX_COMPARE_ITEMS = 5
 
 
 @search_bp.route('/search', methods=['GET'])
 @jwt_required(optional=True)
 def search_suppliers():
-    """GET /api/suppliers/search — поиск с фильтрами, сортировкой и пагинацией."""
+    """GET /api/suppliers/search — поиск с фильтрами.
+
+    Query-параметры:
+        q (str):           поиск по названию (ilike %q%).
+        category_id (str): id категорий через запятую (OR-фильтр).
+        city (str):        точный фильтр по городу (ilike %city%).
+        region (str):      точный фильтр по региону (ilike %region%).
+        location (str):    свободный поиск по городу ИЛИ региону
+                           (используется, когда пользователь не выбрал
+                           конкретный элемент из подсказок).
+        sort_by (str):     поле сортировки.
+        sort_order (str):  'asc' | 'desc'.
+        page, per_page:    пагинация.
+
+    Returns:
+        ``{items, total, page, per_page, pages}``.
+    """
     query_text = request.args.get('q', '', type=str).strip()
     category_ids_str = request.args.get('category_id', '', type=str)
     city = request.args.get('city', '', type=str).strip()
     region = request.args.get('region', '', type=str).strip()
     location = request.args.get('location', '', type=str).strip()
-    sort_by = request.args.get('sort_by', 'name').strip()
-    sort_order = request.args.get('sort_order', 'asc').strip().lower()
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    per_page = min(per_page, 100)
+    per_page = min(request.args.get('per_page', 20, type=int), 100)
 
-    if sort_by not in SORTABLE_FIELDS:
-        return jsonify({'error': f'Недопустимое поле сортировки: {sort_by}'}), 400
-    if sort_order not in ('asc', 'desc'):
-        return jsonify({'error': 'sort_order должен быть asc или desc'}), 400
+    order_expr, _, err = parse_sort_params(SORTABLE_FIELDS)
+    if err:
+        return jsonify({'error': err[1]}), err[0]
 
     query = Supplier.query.filter_by(is_active=True)
 
-    # Поиск по названию (case-insensitive, частичное совпадение)
+    # Поиск по названию
     if query_text:
         query = query.filter(Supplier.name.ilike(f'%{query_text}%'))
 
-    # Фильтрация по категориям (поддержка нескольких через запятую, OR)
+    # Фильтр по категориям (несколько через запятую — OR)
     if category_ids_str:
         try:
             category_ids = [
@@ -54,17 +82,15 @@ def search_suppliers():
                 Supplier.categories.any(Category.id.in_(category_ids))
             )
 
-    # Фильтрация по городу (частичное совпадение)
+    # Фильтр по городу
     if city:
         query = query.filter(Supplier.city.ilike(f'%{city}%'))
 
-    # Фильтрация по региону (частичное совпадение)
+    # Фильтр по региону
     if region:
         query = query.filter(Supplier.region.ilike(f'%{region}%'))
 
-    # Фильтрация по локации: OR-поиск по городу и региону.
-    # Используется при свободном вводе в поле «Город или регион»,
-    # когда пользователь не выбрал конкретный элемент из подсказок.
+    # Свободный «location» — OR по городу и региону
     if location and not city and not region:
         query = query.filter(
             or_(
@@ -73,24 +99,12 @@ def search_suppliers():
             )
         )
 
-    order_expr = SORTABLE_FIELDS[sort_by]()
-    if sort_order == 'desc':
-        order_expr = order_expr.desc()
     query = query.order_by(order_expr, Supplier.id)
     paginated = query.paginate(page=page, per_page=per_page, error_out=False)
 
     jwt_data = get_jwt()
     user_id = int(get_jwt_identity()) if jwt_data else None
-
-    items = []
-    for s in paginated.items:
-        supplier_dict = s.to_dict()
-        if user_id:
-            note_obj = SupplierNote.query.filter_by(
-                user_id=user_id, supplier_id=s.id
-            ).first()
-            supplier_dict['user_note'] = note_obj.note if note_obj else None
-        items.append(supplier_dict)
+    items = attach_user_notes(paginated.items, user_id)
 
     return jsonify({
         'items': items,
@@ -103,7 +117,14 @@ def search_suppliers():
 
 @search_bp.route('/compare', methods=['GET'])
 def compare_suppliers():
-    """GET /api/suppliers/compare?ids=1,2,3 — данные для сравнения (максимум 5)."""
+    """GET /api/suppliers/compare?ids=1,2,3 — данные для страницы сравнения.
+
+    Query-параметры:
+        ids (str): список id через запятую (максимум 5).
+
+    Returns:
+        Массив сериализованных поставщиков.
+    """
     ids_str = request.args.get('ids', '', type=str).strip()
 
     if not ids_str:
@@ -114,14 +135,16 @@ def compare_suppliers():
     except ValueError:
         return jsonify({'error': 'Некорректный формат ids'}), 400
 
-    if len(ids) == 0:
+    if not ids:
         return jsonify({'error': 'Список ids пуст'}), 400
 
-    if len(ids) > 5:
-        return jsonify({'error': 'Максимум 5 поставщиков для сравнения'}), 400
+    if len(ids) > MAX_COMPARE_ITEMS:
+        return jsonify({
+            'error': f'Максимум {MAX_COMPARE_ITEMS} поставщиков для сравнения'
+        }), 400
 
     suppliers = Supplier.query.filter(
-        Supplier.id.in_(ids), Supplier.is_active == True
+        Supplier.id.in_(ids), Supplier.is_active.is_(True)
     ).all()
 
     if len(suppliers) != len(ids):

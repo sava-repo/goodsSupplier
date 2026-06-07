@@ -1,10 +1,20 @@
+"""CRUD-эндпоинты для подкатегорий.
+
+* ``GET    /api/subcategories``              — список (с фильтром по category_id).
+* ``GET    /api/subcategories/<id>``         — детали подкатегории.
+* ``POST   /api/subcategories``              — создание.
+* ``PUT    /api/subcategories/<id>``         — обновление.
+* ``DELETE /api/subcategories/<id>``         — удаление (если нет поставщиков).
+"""
+from __future__ import annotations
+
 from flask import Blueprint, request, jsonify
+from sqlalchemy import func
+
 from app.database import db
-from app.models import Subcategory, Category
-from app.schemas import (
-    subcategory_schema,
-    subcategories_schema,
-)
+from app.models import Subcategory, Category, supplier_subcategories, Supplier
+from app.schemas import subcategory_schema
+from app.utils.db import get_object_or_404
 
 subcategories_bp = Blueprint('subcategories', __name__)
 
@@ -14,7 +24,10 @@ def get_subcategories():
     """GET /api/subcategories — список всех подкатегорий.
 
     Query-параметры:
-      - category_id: фильтр по категории (опционально)
+        category_id (int, опционально): фильтр по родительской категории.
+
+    Оптимизация N+1: ``supplier_count`` считается одним GROUP BY,
+    а не отдельным ``self.suppliers.count()`` для каждой подкатегории.
     """
     category_id = request.args.get('category_id', '', type=str).strip()
     query = Subcategory.query
@@ -24,23 +37,51 @@ def get_subcategories():
         except ValueError:
             return jsonify({'error': 'Некорректный category_id'}), 400
         query = query.filter_by(category_id=category_id_int)
+
     subcategories = query.order_by(Subcategory.name).all()
-    return jsonify(subcategories_schema.dump(subcategories))
+
+    if not subcategories:
+        return jsonify([])
+
+    # Один запрос: количество активных поставщиков на подкатегорию
+    counts_rows = (
+        db.session.query(
+            supplier_subcategories.c.subcategory_id,
+            func.count(supplier_subcategories.c.supplier_id),
+        )
+        .join(Supplier, Supplier.id == supplier_subcategories.c.supplier_id)
+        .filter(Supplier.is_active.is_(True))
+        .group_by(supplier_subcategories.c.subcategory_id)
+        .all()
+    )
+    counts_map = dict(counts_rows)
+
+    result = [
+        sc.to_dict(supplier_count=counts_map.get(sc.id, 0))
+        for sc in subcategories
+    ]
+    return jsonify(result)
 
 
 @subcategories_bp.route('/<int:subcategory_id>', methods=['GET'])
-def get_subcategory(subcategory_id):
-    """GET /api/subcategories/<id> — детали подкатегории."""
-    subcategory = Subcategory.query.get(subcategory_id)
-    if not subcategory:
-        return jsonify({'error': 'Подкатегория не найдена'}), 404
+def get_subcategory(subcategory_id: int):
+    """GET /api/subcategories/<id> — детали одной подкатегории."""
+    subcategory, err = get_object_or_404(
+        Subcategory, subcategory_id, 'Подкатегория не найдена'
+    )
+    if err:
+        return err
     return jsonify(subcategory.to_dict())
 
 
 @subcategories_bp.route('', methods=['POST'])
 def create_subcategory():
-    """POST /api/subcategories — создание подкатегории."""
-    data = request.get_json()
+    """POST /api/subcategories — создание подкатегории.
+
+    Тело: ``{"name": "...", "category_id": N, "description": "..."}``.
+    Уникальность: ``(name, category_id)``.
+    """
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': 'Отсутствует тело запроса'}), 400
 
@@ -73,13 +114,20 @@ def create_subcategory():
 
 
 @subcategories_bp.route('/<int:subcategory_id>', methods=['PUT'])
-def update_subcategory(subcategory_id):
-    """PUT /api/subcategories/<id> — обновление подкатегории."""
-    subcategory = Subcategory.query.get(subcategory_id)
-    if not subcategory:
-        return jsonify({'error': 'Подкатегория не найдена'}), 404
+def update_subcategory(subcategory_id: int):
+    """PUT /api/subcategories/<id> — обновление подкатегории.
 
-    data = request.get_json()
+    Можно менять ``name``, ``category_id``, ``description``.
+    Уникальность ``(name, category_id)`` проверяется с учётом
+    текущей подкатегории (исключая её саму).
+    """
+    subcategory, err = get_object_or_404(
+        Subcategory, subcategory_id, 'Подкатегория не найдена'
+    )
+    if err:
+        return err
+
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': 'Отсутствует тело запроса'}), 400
 
@@ -112,11 +160,16 @@ def update_subcategory(subcategory_id):
 
 
 @subcategories_bp.route('/<int:subcategory_id>', methods=['DELETE'])
-def delete_subcategory(subcategory_id):
-    """DELETE /api/subcategories/<id> — удаление с проверкой связанных поставщиков."""
-    subcategory = Subcategory.query.get(subcategory_id)
-    if not subcategory:
-        return jsonify({'error': 'Подкатегория не найдена'}), 404
+def delete_subcategory(subcategory_id: int):
+    """DELETE /api/subcategories/<id> — удаление.
+
+    Нельзя удалить, если есть связанные поставщики.
+    """
+    subcategory, err = get_object_or_404(
+        Subcategory, subcategory_id, 'Подкатегория не найдена'
+    )
+    if err:
+        return err
 
     if subcategory.suppliers.count() > 0:
         return jsonify({

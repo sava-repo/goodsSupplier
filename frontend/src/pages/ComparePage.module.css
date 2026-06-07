@@ -84,3 +84,15 @@
   gap: var(--spacing-sm);
   justify-content: center;
 }
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statusText {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--text-secondary);
+}

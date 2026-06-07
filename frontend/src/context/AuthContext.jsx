@@ -1,3 +1,19 @@
+/**
+ * Контекст аутентификации.
+ *
+ * Предоставляет состояние текущего пользователя, методы для входа,
+ * регистрации и выхода. Токен хранится в localStorage.
+ *
+ * @context
+ * @property {object|null} user — данные пользователя или null.
+ * @property {boolean} loading — идёт ли начальная загрузка (проверка токена).
+ * @property {boolean} isAuthenticated — авторизован ли пользователь.
+ * @property {(username: string, password: string) => Promise<object>} login —
+ *   вход по логину и паролю.
+ * @property {(username: string, password: string) => Promise<object>} register —
+ *   регистрация нового пользователя.
+ * @property {() => void} logout — выход (удаление токена).
+ */
 import { createContext, useContext, useState, useEffect } from 'react'
 import { authApi } from '../api/auth'
 
@@ -7,6 +23,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Восстановление сессии при монтировании
   useEffect(() => {
     const token = localStorage.getItem('access_token')
     if (token) {

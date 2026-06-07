@@ -47,17 +47,14 @@ export default function SupplierFormPage() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
-  // Загрузка категорий
   useEffect(() => {
     categoriesApi.list().then(setCategories).catch(() => {})
   }, [])
 
-  // Загрузка подкатегорий
   useEffect(() => {
     subcategoriesApi.list().then(setSubcategories).catch(() => {})
   }, [])
 
-  // Загрузка данных для редактирования
   useEffect(() => {
     if (isEdit) {
       suppliersApi.get(id)
@@ -115,11 +112,6 @@ export default function SupplierFormPage() {
     }
   }
 
-  const categoryOptions = categories.map((c) => ({
-    value: String(c.id),
-    label: c.name,
-  }))
-
   const toggleCategory = (catId) => {
     const numId = Number(catId)
     setForm((prev) => ({
@@ -161,7 +153,6 @@ export default function SupplierFormPage() {
     }))
   }
 
-  // Подкатегории, видимые в форме (только из выбранных категорий)
   const visibleSubcategories = subcategories.filter((sc) =>
     form.category_ids.includes(sc.category_id)
   )
@@ -170,21 +161,15 @@ export default function SupplierFormPage() {
     return (
       <div className={styles.container}>
         <Link to={isEdit ? `/suppliers/${id}` : '/'} className={styles.back}>
-          <ArrowLeft style={{ width: 16, height: 16 }} />
+          <ArrowLeft />
           {isEdit ? 'Назад к поставщику' : 'Назад к каталогу'}
         </Link>
-        <div style={{
-          textAlign: 'center',
-          padding: '64px 24px',
-          background: 'var(--surface, #fff)',
-          borderRadius: 12,
-          marginTop: 16,
-        }}>
-          <LogIn style={{ width: 40, height: 40, color: 'var(--text-muted, #94a3b8)', marginBottom: 12 }} />
-          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600 }}>
+        <div className={styles.authGuard}>
+          <LogIn className={styles.authGuardIcon} />
+          <h2 className={styles.authGuardTitle}>
             Войдите, чтобы {isEdit ? 'редактировать' : 'добавлять'} поставщика
           </h2>
-          <p style={{ color: 'var(--text-secondary, #64748b)', margin: '0 0 20px' }}>
+          <p className={styles.authGuardText}>
             Для этого действия требуется авторизация
           </p>
           <Link to="/login">
@@ -198,7 +183,7 @@ export default function SupplierFormPage() {
   return (
     <div className={styles.container}>
       <Link to={isEdit ? `/suppliers/${id}` : '/'} className={styles.back}>
-        <ArrowLeft style={{ width: 16, height: 16 }} />
+        <ArrowLeft />
         {isEdit ? 'Назад к поставщику' : 'Назад к каталогу'}
       </Link>
 
@@ -207,7 +192,6 @@ export default function SupplierFormPage() {
       </h1>
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        {/* Основная информация */}
         <Card>
           <Card.Header title="Основная информация" />
           <Card.Content>
@@ -251,11 +235,10 @@ export default function SupplierFormPage() {
           </Card.Content>
         </Card>
 
-        {/* Категории */}
         <Card>
           <Card.Header title="Категории товаров" />
           <Card.Content>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className={styles.chipGroup}>
               {categories.map((cat) => (
                 <Button
                   key={cat.id}
@@ -271,20 +254,19 @@ export default function SupplierFormPage() {
           </Card.Content>
         </Card>
 
-        {/* Подкатегории */}
         <Card>
           <Card.Header title="Подкатегории товаров" />
           <Card.Content>
             {form.category_ids.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--text-muted, #94a3b8)' }}>
+              <p className={styles.chipHint}>
                 Сначала выберите категории
               </p>
             ) : visibleSubcategories.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--text-muted, #94a3b8)' }}>
+              <p className={styles.chipHint}>
                 Для выбранных категорий пока нет подкатегорий
               </p>
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div className={styles.chipGroup}>
                 {visibleSubcategories.map((sc) => (
                   <Button
                     key={sc.id}
@@ -301,7 +283,6 @@ export default function SupplierFormPage() {
           </Card.Content>
         </Card>
 
-        {/* Контакты */}
         <Card>
           <Card.Header title="Контакты" />
           <Card.Content>
@@ -342,7 +323,6 @@ export default function SupplierFormPage() {
           </Card.Content>
         </Card>
 
-        {/* Условия */}
         <Card>
           <Card.Header title="Условия работы" />
           <Card.Content>
@@ -376,12 +356,12 @@ export default function SupplierFormPage() {
                     placeholder="ISO 22000, ХАССП..."
                     className={styles.fullWidth}
                   />
-                  <div className={styles.fullWidth} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
+                  <div className={`${styles.fullWidth} ${styles.certSection}`}>
+                    <span className={styles.certSectionLabel}>
                       Ссылки на сертификаты / декларации
                     </span>
                     {(form.certificate_urls || []).map((url, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: 8 }}>
+                      <div key={idx} className={styles.certUrlRow}>
                         <Input
                           value={url}
                           onChange={(e) => updateCertUrl(idx, e.target.value)}
@@ -393,7 +373,7 @@ export default function SupplierFormPage() {
                           onClick={() => removeCertUrl(idx)}
                           title="Удалить ссылку"
                         >
-                          <X style={{ width: 16, height: 16 }} />
+                          <X />
                         </Button>
                       </div>
                     ))}
@@ -403,7 +383,7 @@ export default function SupplierFormPage() {
                       size="small"
                       icon={Plus}
                       onClick={addCertUrl}
-                      style={{ alignSelf: 'flex-start' }}
+                      className={styles.alignSelfStart}
                     >
                       Добавить ссылку
                     </Button>
@@ -426,7 +406,6 @@ export default function SupplierFormPage() {
           </Card.Content>
         </Card>
 
-        {/* Заметки */}
         <Card>
           <Card.Header title="Дополнительно" />
           <Card.Content>

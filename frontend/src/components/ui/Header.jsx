@@ -24,7 +24,7 @@ export default function Header({ compareCount = 0 }) {
               `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
             }
           >
-            <Plus style={{ width: 14, height: 14, marginRight: 4 }} />
+            <Plus />
             Добавить
           </NavLink>
         </nav>
@@ -36,22 +36,22 @@ export default function Header({ compareCount = 0 }) {
             `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
           }
         >
-          <GitCompare style={{ width: 16, height: 16, marginRight: 4 }} />
+          <GitCompare />
           Сравнить
           {compareCount > 0 && (
             <span className={styles.compareBadge}>{compareCount}</span>
           )}
         </NavLink>
         {isAuthenticated ? (
-          <button className={styles.navLink} onClick={handleLogout} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <LogOut style={{ width: 16, height: 16 }} />
+          <button className={styles.logoutBtn} onClick={handleLogout}>
+            <LogOut />
             {user?.username}
           </button>
         ) : (
           <NavLink to="/login" className={({ isActive }) =>
             `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
           }>
-            <LogIn style={{ width: 16, height: 16, marginRight: 4 }} />
+            <LogIn />
             Войти
           </NavLink>
         )}

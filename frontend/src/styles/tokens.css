@@ -3,6 +3,7 @@
   --bg-app: #F5F7FA;
   --bg-surface: #FFFFFF;
   --bg-subtle: #F0F3F7;
+  --bg-hover: rgba(19, 44, 51, 0.04);
   --bg-border: #E2E8F0;
   --bg-border-light: #EDF1F5;
 
@@ -23,6 +24,7 @@
   --color-warning-text: #C4841A;
 
   --color-danger: #FF5B5B;
+  --color-danger-hover: #E04545;
   --color-danger-soft: #FFEBEB;
   --color-danger-text: #D32F2F;
 

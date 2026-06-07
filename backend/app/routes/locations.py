@@ -1,3 +1,10 @@
+"""Автодополнение по локациям (городам и регионам).
+
+``GET /api/suppliers/locations?q=<term>`` — возвращает уникальные
+города и регионы активных поставщиков, начинающиеся с введённых
+символов. Каждый элемент содержит ``value`` (название) и ``type``
+('city' | 'region').
+"""
 from flask import Blueprint, request, jsonify
 from app.database import db
 from app.models import Supplier

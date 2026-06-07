@@ -1,3 +1,17 @@
+/**
+ * Контекст сравнения поставщиков.
+ *
+ * Хранит список id выбранных для сравнения поставщиков (макс. 5),
+ * синхронизирует с localStorage.
+ *
+ * @context
+ * @property {number[]} ids — id выбранных поставщиков.
+ * @property {(id: number) => boolean|undefined} addId — добавить в сравнение;
+ *   возвращает false если достигнут лимит (5).
+ * @property {(id: number) => void} removeId — убрать из сравнения.
+ * @property {() => void} clearAll — очистить список.
+ * @property {(id: number) => boolean} isInCompare — проверка, в списке ли id.
+ */
 import { createContext, useContext, useState, useEffect } from 'react'
 
 const CompareContext = createContext(null)

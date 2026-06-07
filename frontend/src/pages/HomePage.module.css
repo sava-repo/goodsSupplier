@@ -25,3 +25,24 @@
   font-size: 14px;
   color: var(--text-secondary);
 }
+
+.statusText {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--spacing-2xl) 0;
+}
+
+.errorBanner {
+  text-align: center;
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+  padding: var(--spacing-base);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-lg) 0;
+  font-weight: 500;
+}
+
+.resultCount {
+  font-size: 14px;
+  color: var(--text-secondary);
+}

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/ui/Header'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 import { ToastProvider } from './components/ui/Toast'
 import { CompareProvider, useCompare } from './context/CompareContext'
 import { AuthProvider } from './context/AuthContext'
@@ -9,6 +10,7 @@ import SupplierFormPage from './pages/SupplierFormPage'
 import ComparePage from './pages/ComparePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import NotFoundPage from './pages/NotFoundPage'
 
 function AppContent() {
   const { ids } = useCompare()
@@ -16,7 +18,7 @@ function AppContent() {
   return (
     <>
       <Header compareCount={ids.length} />
-      <main style={{ flex: 1 }}>
+      <main className="main">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -25,6 +27,7 @@ function AppContent() {
           <Route path="/suppliers/:id" element={<SupplierDetailPage />} />
           <Route path="/suppliers/:id/edit" element={<SupplierFormPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
     </>
@@ -33,14 +36,16 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <CompareProvider>
-            <AppContent />
-          </CompareProvider>
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <CompareProvider>
+              <AppContent />
+            </CompareProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }

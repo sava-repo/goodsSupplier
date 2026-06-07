@@ -21,11 +21,11 @@ export default function SupplierList({ suppliers, onNoteUpdate, sortBy, sortOrde
       await api.put(`/suppliers/${supplierId}/note`, { note: text })
       onNoteUpdate?.(supplierId, text)
     } catch {
-      // silent fail
+      toast('Не удалось сохранить заметку', 'error')
     } finally {
       setSaving((prev) => ({ ...prev, [supplierId]: false }))
     }
-  }, [onNoteUpdate])
+  }, [onNoteUpdate, toast])
 
   const handleNoteChange = useCallback((supplierId, text) => {
     setLocalNotes((prev) => ({ ...prev, [supplierId]: text }))

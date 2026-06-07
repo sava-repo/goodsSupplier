@@ -1,3 +1,8 @@
+"""Автодополнение по городам.
+
+``GET /api/suppliers/cities?q=<term>`` — возвращает уникальные города
+активных поставщиков, начинающиеся с введённых символов.
+"""
 from flask import Blueprint, request, jsonify
 from app.database import db
 from app.models import Supplier

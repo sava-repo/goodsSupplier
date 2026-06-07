@@ -1,26 +1,56 @@
-from flask import Blueprint, request, jsonify
+"""Эндпоинты аутентификации: регистрация, вход, получение профиля.
+
+Все эндпоинты работают с моделью :class:`~app.models.User`.
+Пароли хранятся в виде werkzeug-хеша (pbkdf2-sha256).
+"""
+from __future__ import annotations
+
+from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from marshmallow import Schema, fields, ValidationError
+
 from app.database import db
 from app.models import User
 
 auth_bp = Blueprint('auth', __name__)
 
 
+def _validate_username(value: str) -> bool:
+    """Marshmallow-валидатор: username ≥ 2 символов."""
+    return len(value.strip()) >= 2
+
+
+def _validate_password(value: str) -> bool:
+    """Marshmallow-валидатор: пароль ≥ MIN_PASSWORD_LENGTH и содержит ≥ 1 цифру."""
+    min_len = current_app.config.get('MIN_PASSWORD_LENGTH', 8)
+    if len(value) < min_len:
+        return False
+    return any(ch.isdigit() for ch in value)
+
+
 class RegisterSchema(Schema):
-    username = fields.String(required=True, validate=lambda x: len(x.strip()) >= 2)
-    password = fields.String(required=True, validate=lambda x: len(x) >= 4)
+    """Схема валидации регистрации."""
+
+    username = fields.String(required=True, validate=_validate_username)
+    password = fields.String(required=True, validate=_validate_password)
 
 
 class LoginSchema(Schema):
+    """Схема валидации входа (только required-поля)."""
+
     username = fields.String(required=True)
     password = fields.String(required=True)
 
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    """Регистрация нового пользователя."""
-    data = request.get_json()
+    """Регистрация нового пользователя.
+
+    Returns:
+        201 — ``{user, access_token}`` при успехе.
+        400 — ошибки валидации или имя занято.
+    """
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': 'Отсутствуют данные'}), 400
 
@@ -47,8 +77,13 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """Вход пользователя."""
-    data = request.get_json()
+    """Вход пользователя по логину/паролю.
+
+    Returns:
+        200 — ``{user, access_token}``.
+        401 — неверные учётные данные.
+    """
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': 'Отсутствуют данные'}), 400
 
@@ -72,9 +107,14 @@ def login():
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def me():
-    """Данные текущего пользователя."""
+    """Данные текущего авторизованного пользователя.
+
+    Returns:
+        200 — :meth:`User.to_dict`.
+        404 — пользователь удалён (но токен ещё действует).
+    """
     user_id = get_jwt_identity()
-    user = User.query.get(int(user_id))
+    user = db.session.get(User, int(user_id))
     if not user:
         return jsonify({'error': 'Пользователь не найден'}), 404
     return jsonify(user.to_dict()), 200

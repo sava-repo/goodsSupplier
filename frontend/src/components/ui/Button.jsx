@@ -1,3 +1,15 @@
+/**
+ * Кнопка с вариантами оформления и размерами.
+ *
+ * @param {{
+ *   children: React.ReactNode,
+ *   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger',
+ *   size?: 'small' | 'medium' | 'large',
+ *   disabled?: boolean,
+ *   icon?: React.ComponentType,
+ *   className?: string,
+ * }} props
+ */
 import styles from './Button.module.css'
 
 const VARIANT_MAP = {

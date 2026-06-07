@@ -55,13 +55,13 @@ export default function ComparePage() {
 
   return (
     <div className={styles.container}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className={styles.pageHeader}>
         <h1 className={styles.title}>Сравнение ({suppliers.length})</h1>
         <Button variant="ghost" onClick={clearAll}>Очистить все</Button>
       </div>
 
       {loading ? (
-        <p style={{ textAlign: 'center', padding: 48 }}>Загрузка...</p>
+        <p className={styles.statusText}>Загрузка...</p>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
