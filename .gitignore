@@ -23,7 +23,9 @@ ENV/
 # Backend: sensitive and runtime artifacts
 # ----------------------------------------------------------------------------
 .env
-backend/dev.db
+# SQLite DB files (any location)
+*.db
+*.db-journal
 backend/flask.log
 backend/*.log
 backend/instance/
