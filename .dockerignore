@@ -1,0 +1,17 @@
+.git/
+.gitignore
+.env
+*.md
+backend/dev.db
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.log
+backend/instance/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+.cline/
+.clinerules/
+openspec/
+*.pen
+nul
